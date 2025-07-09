@@ -1,0 +1,99 @@
+﻿Public Class frm_deletestaff_a193067
+    Dim current_code As String
+    Dim myconnection As New OleDb.OleDbConnection("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=DB_CHAMPIONSPORTS_A193067.accdb;Persist Security Info=False;")
+
+    Private Sub frm_deletestaff_a193067_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        AddHandler grd_deletestaff.CellClick, AddressOf HandleGridEvent
+        AddHandler grd_deletestaff.SelectionChanged, AddressOf HandleGridEvent
+        refresh_grid()
+    End Sub
+
+    Private Sub grd_deletestaff_SelectionChanged(sender As Object, e As EventArgs) Handles grd_deletestaff.SelectionChanged
+        ' Handle the selection changed event to update text fields and display image
+        get_current_code()
+    End Sub
+
+    Private Sub refresh_grid()
+        Dim mysql As String = "SELECT * FROM TBL_STAFF_A193067"
+        Dim mydatatable As New DataTable
+        Dim myreader As New OleDb.OleDbDataAdapter(mysql, myconnection)
+        myreader.Fill(mydatatable)
+        grd_deletestaff.DataSource = mydatatable
+    End Sub
+    Private Sub clear_fields()
+        txt_staffID.Text = ""
+        txt_staffname.Text = ""
+        txt_contactnumber.Text = ""
+        txt_email.Text = ""
+    End Sub
+    Private Sub get_current_code()
+        If grd_deletestaff.SelectedRows.Count > 0 Then
+            Dim current_row As Integer = grd_deletestaff.SelectedRows(0).Index
+            current_code = grd_deletestaff(0, current_row).Value.ToString()
+
+            ' Populate text fields
+            txt_staffID.Text = current_code
+
+            If Not IsDBNull(grd_deletestaff(1, current_row).Value) Then
+                txt_staffname.Text = grd_deletestaff(1, current_row).Value.ToString()
+            Else
+                txt_staffname.Text = ""
+            End If
+
+            ' Check for DBNull before assigning values to avoid potential issues
+            If Not IsDBNull(grd_deletestaff(2, current_row).Value) Then
+                txt_contactnumber.Text = grd_deletestaff(2, current_row).Value.ToString()
+            Else
+                txt_contactnumber.Text = ""
+            End If
+
+            If Not IsDBNull(grd_deletestaff(3, current_row).Value) Then
+                txt_email.Text = grd_deletestaff(3, current_row).Value.ToString()
+            Else
+                txt_email.Text = ""
+            End If
+        End If
+    End Sub
+
+    Private Sub run_sql_command(thissql As String)
+        Dim mywriter As New OleDb.OleDbCommand(thissql, myconnection)
+        Try
+            mywriter.Connection.Open()
+            mywriter.ExecuteNonQuery()
+            mywriter.Connection.Close()
+        Catch ex As Exception
+            Beep()
+            MsgBox("There is a mistake in the data you entered, as shown below" & vbCrLf & vbCrLf & ex.Message)
+            mywriter.Connection.Close()
+        End Try
+    End Sub
+
+    Private Sub btn_delete_Click(sender As Object, e As EventArgs) Handles btn_delete.Click
+        If grd_deletestaff.SelectedRows.Count > 0 Then
+            Dim delete_confirmation = MsgBox("Are you sure you would like to delete the staff? """ & current_code & """?", MsgBoxStyle.YesNo)
+            If delete_confirmation = MsgBoxResult.Yes Then
+                Try
+                    run_sql_command("DELETE FROM TBL_STAFF_A193067 WHERE FLD_STAFF_ID='" & current_code & "'")
+                    Beep()
+                    MsgBox("The staff """ & current_code & """ has been successfully deleted.")
+                    refresh_grid()
+                    clear_fields()
+                Catch ex As Exception
+                    MsgBox("An error occurred while deleting the staff: " & ex.Message)
+                End Try
+            End If
+        Else
+            MsgBox("Please select a staff to delete.")
+        End If
+    End Sub
+
+    Private Sub HandleGridEvent(sender As Object, e As EventArgs)
+        ' Update text fields and display image
+        get_current_code()
+    End Sub
+
+    Private Sub grd_deletestaff_CellClick(sender As Object, e As DataGridViewCellEventArgs) Handles grd_deletestaff.CellClick
+        get_current_code()
+    End Sub
+
+End Class
